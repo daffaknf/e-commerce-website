@@ -21,7 +21,7 @@ const Navbar = () => {
           </a>
         </li>
         <li>
-          <a href="#" className="hover:text-yellow-600 transition">
+          <a href="/produk" className="hover:text-yellow-600 transition">
             Produk
           </a>
         </li>
@@ -68,7 +68,7 @@ const Navbar = () => {
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-yellow-600 transition">
+              <a href="/produk" className="hover:text-yellow-600 transition">
                 Produk
               </a>
             </li>
