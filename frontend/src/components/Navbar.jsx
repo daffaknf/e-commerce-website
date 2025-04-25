@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -11,12 +13,14 @@ const Navbar = () => {
   return (
     <nav className="w-full px-6 py-4 flex items-center justify-between bg-white shadow-md relative">
       {/* Logo kiri */}
-      <div className="text-2xl font-bold text-yellow-800">RotiKu</div>
+      <div className="text-xl font-bold text-yellow-900">
+        {location.pathname === "/produk" ? "Haloo Daffa 👋" : "Toko Roti"}
+      </div>
 
       {/* Center navigation (desktop only) */}
       <ul className="hidden md:flex gap-8 absolute left-1/2 transform -translate-x-1/2 text-gray-700 font-medium">
         <li>
-          <a href="#" className="hover:text-yellow-600 transition">
+          <a href="/" className="hover:text-yellow-600 transition">
             Home
           </a>
         </li>
@@ -63,7 +67,7 @@ const Navbar = () => {
         <div className="absolute top-16 left-0 w-full bg-white shadow-md px-6 py-4 md:hidden z-50">
           <ul className="flex flex-col gap-4 text-gray-700 font-medium">
             <li>
-              <a href="#" className="hover:text-yellow-600 transition">
+              <a href="/" className="hover:text-yellow-600 transition">
                 Home
               </a>
             </li>
