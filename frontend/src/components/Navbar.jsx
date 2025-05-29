@@ -14,7 +14,7 @@ const Navbar = () => {
     <nav className="w-full px-6 py-4 flex items-center justify-between bg-white shadow-md relative">
       {/* Logo kiri */}
       <div className="text-xl font-bold text-yellow-900">
-        {location.pathname === "/produk" ? "Haloo Daffa 👋" : "Toko Roti"}
+        {location.pathname === "/" ? "Toko Roti" : "Halo Daffa 👋"}
       </div>
 
       {/* Center navigation (desktop only) */}
@@ -30,17 +30,12 @@ const Navbar = () => {
           </a>
         </li>
         <li>
-          <a href="#" className="hover:text-yellow-600 transition">
-            blogs
-          </a>
-        </li>
-        <li>
-          <a href="#" className="hover:text-yellow-600 transition">
+          <a href="/review" className="hover:text-yellow-600 transition">
             review
           </a>
         </li>
         <li>
-          <a href="#" className="hover:text-yellow-600 transition">
+          <a href="/contact" className="hover:text-yellow-600 transition">
             Kontak
           </a>
         </li>
@@ -77,17 +72,12 @@ const Navbar = () => {
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-yellow-600 transition">
-                Blogs
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-yellow-600 transition">
+              <a href="/review" className="hover:text-yellow-600 transition">
                 Review
               </a>
             </li>
             <li>
-              <a href="#" className="hover:text-yellow-600 transition">
+              <a href="/contact" className="hover:text-yellow-600 transition">
                 Contact
               </a>
             </li>
