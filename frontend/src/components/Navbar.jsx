@@ -31,7 +31,7 @@ const Navbar = () => {
         </li>
         <li>
           <a href="/review" className="hover:text-yellow-600 transition">
-            review
+            Review
           </a>
         </li>
         <li>
@@ -41,8 +41,20 @@ const Navbar = () => {
         </li>
       </ul>
 
-      {/* Search kanan (desktop only) */}
-      <div className="hidden md:block">
+      {/* Sign In / Sign Up + Search kanan (desktop only) */}
+      <div className="hidden md:flex items-center gap-4">
+        <a
+          href="/signin"
+          className="px-4 py-2 text-sm font-medium text-yellow-900 border border-yellow-900 rounded-lg hover:bg-yellow-100 transition"
+        >
+          Sign In
+        </a>
+        <a
+          href="/signup"
+          className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 transition"
+        >
+          Sign Up
+        </a>
         <input
           type="text"
           placeholder="Cari roti..."
@@ -79,6 +91,16 @@ const Navbar = () => {
             <li>
               <a href="/contact" className="hover:text-yellow-600 transition">
                 Contact
+              </a>
+            </li>
+            <li>
+              <a href="/signin" className="hover:text-yellow-600 transition">
+                Sign In
+              </a>
+            </li>
+            <li>
+              <a href="/signup" className="hover:text-yellow-600 transition">
+                Sign Up
               </a>
             </li>
             <li>
