@@ -98,6 +98,135 @@ app.post("/signin", (req, res) => {
   });
 });
 
+// GET semua kategori
+app.get("/categorys", (req, res) => {
+  db.query("SELECT * FROM categorys", (err, result) => {
+    if (err) return res.status(500).json({ message: "Error ambil data" });
+    res.json(result);
+  });
+});
+
+// POST tambah kategori
+// POST tambah kategori (pakai UUID untuk category_id karena tipe VARCHAR)
+app.post("/categorys", (req, res) => {
+  const { name } = req.body;
+  const category_id = uuidv4(); // 🔑 Buat ID unik
+
+  if (!name) {
+    return res
+      .status(400)
+      .json({ message: "Nama kategori tidak boleh kosong" });
+  }
+
+  db.query(
+    "INSERT INTO categorys (category_id, name) VALUES (?, ?)",
+    [category_id, name],
+    (err) => {
+      if (err) {
+        console.error("❌ Gagal tambah kategori:", err);
+        return res.status(500).json({ message: "Gagal tambah kategori" });
+      }
+      res.json({ message: "Kategori berhasil ditambahkan" });
+    }
+  );
+});
+
+// PUT update kategori
+app.put("/categorys/:id", (req, res) => {
+  const { name } = req.body;
+  const { id } = req.params;
+  db.query(
+    "UPDATE categorys SET name = ? WHERE category_id = ?",
+    [name, id],
+    (err) => {
+      if (err)
+        return res.status(500).json({ message: "Error update kategori" });
+      res.json({ message: "Kategori diupdate" });
+    }
+  );
+});
+
+// DELETE hapus kategori
+app.delete("/categorys/:id", (req, res) => {
+  const { id } = req.params;
+  db.query("DELETE FROM categorys WHERE category_id = ?", [id], (err) => {
+    if (err) return res.status(500).json({ message: "Error hapus kategori" });
+    res.json({ message: "Kategori dihapus" });
+  });
+});
+
+// GET semua produk
+// GET semua produk + nama kategori
+app.get("/products", (req, res) => {
+  const sql = `
+    SELECT 
+      p.product_id, 
+      p.name, 
+      p.stock, 
+      p.price, 
+      c.name AS category_name
+    FROM product p
+    JOIN categorys c ON p.category_id = c.category_id
+  `;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error("Gagal ambil produk:", err);
+      return res.status(500).json({ message: "Error ambil produk" });
+    }
+    res.json(result);
+  });
+});
+
+// POST tambah produk
+app.post("/products", (req, res) => {
+  const { name, stock, price, category_id } = req.body;
+  const product_id = uuidv4();
+
+  if (!name || stock == null || price == null || !category_id) {
+    return res.status(400).json({ message: "Semua field harus diisi" });
+  }
+
+  const sql =
+    "INSERT INTO product (product_id, name, stock, price, category_id) VALUES (?, ?, ?, ?, ?)";
+  db.query(sql, [product_id, name, stock, price, category_id], (err) => {
+    if (err) {
+      console.error("Gagal tambah produk:", err);
+      return res.status(500).json({ message: "Gagal tambah produk" });
+    }
+    res.json({ message: "Produk ditambahkan" });
+  });
+});
+
+// PUT update produk
+app.put("/products/:id", (req, res) => {
+  const { name, stock, price, category_id } = req.body;
+  const { id } = req.params;
+
+  const sql =
+    "UPDATE product SET name = ?, stock = ?, price = ?, category_id = ? WHERE product_id = ?";
+  db.query(sql, [name, stock, price, category_id, id], (err) => {
+    if (err) {
+      console.error("Gagal update produk:", err);
+      return res.status(500).json({ message: "Gagal update produk" });
+    }
+    res.json({ message: "Produk diupdate" });
+  });
+});
+
+// DELETE hapus produk
+app.delete("/products/:id", (req, res) => {
+  const { id } = req.params;
+
+  db.query("DELETE FROM product WHERE product_id = ?", [id], (err) => {
+    if (err) {
+      console.error("Gagal hapus produk:", err);
+      return res.status(500).json({ message: "Gagal hapus produk" });
+    }
+    res.json({ message: "Produk dihapus" });
+  });
+});
+
 // Jalankan server
 const PORT = 3001;
 app.listen(PORT, () => {

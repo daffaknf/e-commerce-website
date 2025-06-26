@@ -26,7 +26,7 @@ const SignIn = () => {
       if (role === "customer") {
         navigate("/");
       } else if (role === "admin") {
-        navigate("/admin");
+        navigate("/admin/dashboard");
       } else {
         setErrorMsg("Role tidak dikenali.");
       }

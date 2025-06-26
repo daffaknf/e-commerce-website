@@ -12,6 +12,8 @@ import Admin from "./pages/admin/Admin.jsx";
 import KategoriProduk from "./pages/admin/KategoriProduk/KategoriProduk.jsx";
 import ProdukDetail from "./pages/admin/ProdukDetail/ProdukDetail.jsx";
 import Voucher from "./pages/admin/Voucher/Voucher.jsx";
+import PesananDetail from "./pages/admin/Pesanan/PesananDetail.jsx";
+import Dashboard from "./pages/admin/dashboard.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
@@ -22,10 +24,13 @@ createRoot(document.getElementById("root")).render(
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/kategoriproduk" element={<KategoriProduk />} />
-        <Route path="/produkdetail" element={<ProdukDetail />} />
-        <Route path="/voucher" element={<Voucher />} />
+        <Route path="/admin" element={<Admin />}>
+          <Route path="kategoriproduk" element={<KategoriProduk />} />
+          <Route path="produkdetail" element={<ProdukDetail />} />
+          <Route path="voucher" element={<Voucher />} />
+          <Route path="pesanan" element={<PesananDetail />} />
+          <Route path="dashboard" element={<Dashboard />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   </StrictMode>
