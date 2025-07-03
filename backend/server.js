@@ -227,6 +227,77 @@ app.delete("/products/:id", (req, res) => {
   });
 });
 
+// GET semua voucher
+app.get("/vouchers", (req, res) => {
+  db.query("SELECT * FROM vouchers", (err, result) => {
+    if (err) return res.status(500).json({ message: "Gagal ambil voucher" });
+    res.json(result);
+  });
+});
+
+// POST tambah voucher
+app.post("/vouchers", (req, res) => {
+  const { code_voucher, name_voucher, discount_percent, quota } = req.body;
+  const voucher_id = uuidv4();
+
+  if (!code_voucher || !name_voucher || !discount_percent || !quota) {
+    return res.status(400).json({ message: "Semua field harus diisi" });
+  }
+
+  const sql = `
+    INSERT INTO vouchers (voucher_id, code_voucher, name_voucher, discount_percent, quota)
+    VALUES (?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    sql,
+    [voucher_id, code_voucher, name_voucher, discount_percent, quota],
+    (err) => {
+      if (err) {
+        console.error("Gagal tambah voucher:", err);
+        return res.status(500).json({ message: "Gagal tambah voucher" });
+      }
+      res.json({ message: "Voucher ditambahkan" });
+    }
+  );
+});
+
+// PUT update voucher
+app.put("/vouchers/:id", (req, res) => {
+  const { code_voucher, name_voucher, discount_percent, quota } = req.body;
+  const { id } = req.params;
+
+  const sql = `
+    UPDATE vouchers
+    SET code_voucher = ?, name_voucher = ?, discount_percent = ?, quota = ?
+    WHERE voucher_id = ?
+  `;
+
+  db.query(
+    sql,
+    [code_voucher, name_voucher, discount_percent, quota, id],
+    (err) => {
+      if (err) {
+        console.error("Gagal update voucher:", err);
+        return res.status(500).json({ message: "Gagal update voucher" });
+      }
+      res.json({ message: "Voucher diperbarui" });
+    }
+  );
+});
+
+// DELETE hapus voucher
+app.delete("/vouchers/:id", (req, res) => {
+  const { id } = req.params;
+  db.query("DELETE FROM vouchers WHERE voucher_id = ?", [id], (err) => {
+    if (err) {
+      console.error("Gagal hapus voucher:", err);
+      return res.status(500).json({ message: "Gagal hapus voucher" });
+    }
+    res.json({ message: "Voucher dihapus" });
+  });
+});
+
 // Jalankan server
 const PORT = 3001;
 app.listen(PORT, () => {

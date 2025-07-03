@@ -193,7 +193,7 @@ const ProdukDetail = () => {
                   key={prod.product_id}
                   className="border-t border-gray-100 text-center"
                 >
-                  <td className="px-4 py-2">{prod.name}</td>
+                  <td className="">{prod.name}</td>
                   <td className="px-4 py-2">{prod.stock}</td>
                   <td className="px-4 py-2">
                     Rp {prod.price.toLocaleString()}
