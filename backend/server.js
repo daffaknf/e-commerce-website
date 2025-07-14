@@ -23,6 +23,26 @@ app.get("/users", (req, res) => {
   });
 });
 
+const multer = require("multer");
+const path = require("path");
+
+// Setup penyimpanan file
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // folder penyimpanan gambar
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const filename = Date.now() + ext;
+    cb(null, filename);
+  },
+});
+
+const upload = multer({ storage });
+
+// Biarkan Express akses file statis di folder uploads
+app.use("/uploads", express.static("uploads"));
+
 // 🔐 SIGNUP: POST /signup
 // 🔐 SIGNUP: POST /signup
 app.post("/signup", async (req, res) => {
@@ -164,6 +184,8 @@ app.get("/products", (req, res) => {
       p.name, 
       p.stock, 
       p.price, 
+      p.category_id,
+      p.image_product,
       c.name AS category_name
     FROM product p
     JOIN categorys c ON p.category_id = c.category_id
@@ -179,33 +201,61 @@ app.get("/products", (req, res) => {
 });
 
 // POST tambah produk
-app.post("/products", (req, res) => {
+// POST tambah produk + upload gambar
+app.post("/products", upload.single("image_product"), (req, res) => {
   const { name, stock, price, category_id } = req.body;
+  const image_product = req.file ? req.file.filename : null;
   const product_id = uuidv4();
 
-  if (!name || stock == null || price == null || !category_id) {
-    return res.status(400).json({ message: "Semua field harus diisi" });
+  if (
+    !name ||
+    stock == null ||
+    price == null ||
+    !category_id ||
+    !image_product
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Semua field harus diisi termasuk gambar" });
   }
 
   const sql =
-    "INSERT INTO product (product_id, name, stock, price, category_id) VALUES (?, ?, ?, ?, ?)";
-  db.query(sql, [product_id, name, stock, price, category_id], (err) => {
-    if (err) {
-      console.error("Gagal tambah produk:", err);
-      return res.status(500).json({ message: "Gagal tambah produk" });
+    "INSERT INTO product (product_id, name, stock, price, category_id, image_product) VALUES (?, ?, ?, ?, ?, ?)";
+  db.query(
+    sql,
+    [product_id, name, stock, price, category_id, image_product],
+    (err) => {
+      if (err) {
+        console.error("Gagal tambah produk:", err);
+        return res.status(500).json({ message: "Gagal tambah produk" });
+      }
+      res.json({ message: "Produk ditambahkan" });
     }
-    res.json({ message: "Produk ditambahkan" });
-  });
+  );
 });
 
 // PUT update produk
-app.put("/products/:id", (req, res) => {
+app.put("/products/:id", upload.single("image_product"), (req, res) => {
   const { name, stock, price, category_id } = req.body;
   const { id } = req.params;
+  const image_product = req.file ? req.file.filename : null;
 
-  const sql =
-    "UPDATE product SET name = ?, stock = ?, price = ?, category_id = ? WHERE product_id = ?";
-  db.query(sql, [name, stock, price, category_id, id], (err) => {
+  let sql, params;
+  if (image_product) {
+    sql = `
+      UPDATE product SET name = ?, stock = ?, price = ?, category_id = ?, image_product = ?
+      WHERE product_id = ?
+    `;
+    params = [name, stock, price, category_id, image_product, id];
+  } else {
+    sql = `
+      UPDATE product SET name = ?, stock = ?, price = ?, category_id = ?
+      WHERE product_id = ?
+    `;
+    params = [name, stock, price, category_id, id];
+  }
+
+  db.query(sql, params, (err) => {
     if (err) {
       console.error("Gagal update produk:", err);
       return res.status(500).json({ message: "Gagal update produk" });

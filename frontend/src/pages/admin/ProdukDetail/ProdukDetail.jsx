@@ -12,8 +12,9 @@ const ProdukDetail = () => {
     category_id: "",
   });
   const [editingId, setEditingId] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
 
-  // Ambil data produk & kategori
   useEffect(() => {
     fetchProducts();
     fetchCategories();
@@ -48,17 +49,24 @@ const ProdukDetail = () => {
     e.preventDefault();
 
     try {
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("stock", formData.stock);
+      data.append("price", formData.price);
+      data.append("category_id", formData.category_id);
+      if (imageFile) data.append("image_product", imageFile);
+
       if (editingId) {
-        await axios.put(
-          `http://localhost:3001/products/${editingId}`,
-          formData
-        );
+        await axios.put(`http://localhost:3001/products/${editingId}`, data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       } else {
-        await axios.post("http://localhost:3001/products", formData);
+        await axios.post("http://localhost:3001/products", data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       }
 
-      setFormData({ name: "", stock: "", price: "", category_id: "" });
-      setEditingId(null);
+      resetForm();
       fetchProducts();
     } catch (err) {
       console.error("Gagal simpan produk:", err);
@@ -73,6 +81,8 @@ const ProdukDetail = () => {
       price: product.price,
       category_id: product.category_id,
     });
+    setPreviewImage(`http://localhost:3001/uploads/${product.image_product}`);
+    setImageFile(null);
   };
 
   const handleDelete = async (id) => {
@@ -87,8 +97,14 @@ const ProdukDetail = () => {
   };
 
   const handleCancel = () => {
+    resetForm();
+  };
+
+  const resetForm = () => {
     setEditingId(null);
     setFormData({ name: "", stock: "", price: "", category_id: "" });
+    setImageFile(null);
+    setPreviewImage(null);
   };
 
   return (
@@ -147,6 +163,24 @@ const ProdukDetail = () => {
               </option>
             ))}
           </select>
+
+          {/* Input gambar */}
+          <input
+            type="file"
+            accept="image_product/*"
+            onChange={(e) => setImageFile(e.target.files[0])}
+            className="border border-gray-300 rounded px-3 py-2"
+          />
+
+          {/* Preview gambar */}
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="w-32 h-32 object-cover rounded-md border"
+            />
+          )}
+
           <div className="md:col-span-2 flex justify-end gap-2">
             {editingId ? (
               <>
@@ -180,6 +214,7 @@ const ProdukDetail = () => {
           <table className="w-full table-auto border border-gray-200">
             <thead className="bg-yellow-200 text-yellow-900">
               <tr>
+                <th className="p-2 border">Gambar</th>
                 <th className="p-2 border">Nama</th>
                 <th className="p-2 border">Stok</th>
                 <th className="p-2 border">Harga</th>
@@ -193,13 +228,18 @@ const ProdukDetail = () => {
                   key={prod.product_id}
                   className="border-t border-gray-100 text-center"
                 >
-                  <td className="">{prod.name}</td>
-                  <td className="px-4 py-2">{prod.stock}</td>
-                  <td className="px-4 py-2">
-                    Rp {prod.price.toLocaleString()}
+                  <td className="p-2">
+                    <img
+                      src={`http://localhost:3001/uploads/${prod.image_product}`}
+                      alt={prod.name}
+                      className="w-16 h-16 object-cover rounded mx-auto"
+                    />
                   </td>
-                  <td className="px-4 py-2">{prod.category_name}</td>
-                  <td className="px-4 py-2 flex gap-2 justify-center">
+                  <td>{prod.name}</td>
+                  <td>{prod.stock}</td>
+                  <td>Rp {prod.price.toLocaleString()}</td>
+                  <td>{prod.category_name}</td>
+                  <td className="flex gap-2 justify-center">
                     <button
                       onClick={() => handleEdit(prod)}
                       className="text-blue-600 hover:text-blue-800"
@@ -217,7 +257,7 @@ const ProdukDetail = () => {
               ))}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="text-center text-gray-500 py-4">
+                  <td colSpan="6" className="text-center text-gray-500 py-4">
                     Belum ada produk.
                   </td>
                 </tr>
