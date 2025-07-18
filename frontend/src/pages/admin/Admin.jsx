@@ -1,4 +1,5 @@
 import React from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -7,18 +8,29 @@ import {
   Percent,
   ShoppingCart,
   LogOut,
-  UserCircle,
+  UserCircle2,
 } from "lucide-react";
 
 const Admin = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("user"); // Hapus data user
     navigate("/"); // Arahkan ke halaman utama
   };
+  const backToHome = () => {
+    navigate("/"); // Arahkan ke halaman utama
+  };
 
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
@@ -104,8 +116,26 @@ const Admin = () => {
           <h1 className="text-2xl font-bold text-yellow-700 capitalize">
             {location.pathname.split("/")[2] || "Dashboard"}
           </h1>
-          <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-white">
-            <UserCircle className="w-6 h-6" />
+          <div className="relative">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="transition-transform transform hover:scale-110 duration-300"
+            >
+              <UserCircle2 size={32} className="text-yellow-900" />
+            </button>
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white shadow-md rounded-md py-2 z-10">
+                <div className="px-4 py-2 text-sm text-gray-700 border-b">
+                  {user.name}
+                </div>
+                <button
+                  onClick={backToHome}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                >
+                  Back To Home
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <Outlet />

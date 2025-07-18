@@ -27,6 +27,10 @@ const Navbar = () => {
     navigate("/");
   };
 
+  const backToAdmin = () => {
+    navigate("/admin");
+  };
+
   return (
     <nav className="w-full px-6 py-4 flex items-center justify-between bg-white shadow-md relative">
       {/* Logo kiri */}
@@ -62,7 +66,7 @@ const Navbar = () => {
         </li>
       </ul>
 
-      {/* Kanan */}
+      {/* Kanan (desktop only) */}
       <div className="hidden md:flex items-center gap-4 relative">
         {!user ? (
           <>
@@ -92,6 +96,14 @@ const Navbar = () => {
                 <div className="px-4 py-2 text-sm text-gray-700 border-b">
                   {user.name}
                 </div>
+                {user.role === "admin" && (
+                  <button
+                    onClick={backToAdmin}
+                    className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
+                  >
+                    Go to Admin Page
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -162,6 +174,16 @@ const Navbar = () => {
             ) : (
               <>
                 <li className="border-t pt-2">{user.name}</li>
+                {user.role === "admin" && (
+                  <li>
+                    <button
+                      onClick={backToAdmin}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      Go to Admin Page
+                    </button>
+                  </li>
+                )}
                 <li>
                   <button
                     onClick={handleLogout}
