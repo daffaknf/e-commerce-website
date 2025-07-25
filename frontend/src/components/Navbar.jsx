@@ -31,6 +31,10 @@ const Navbar = () => {
     navigate("/admin");
   };
 
+  const goToRiwayat = () => {
+    navigate("/order-history");
+  };
+
   return (
     <nav className="w-full px-6 py-4 flex items-center justify-between bg-white shadow-md relative">
       {/* Logo kiri */}
@@ -102,6 +106,14 @@ const Navbar = () => {
                     className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
                   >
                     Go to Admin Page
+                  </button>
+                )}
+                {user.role === "customer" && (
+                  <button
+                    onClick={goToRiwayat}
+                    className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50"
+                  >
+                    Riwayat Pesanan
                   </button>
                 )}
                 <button
@@ -181,6 +193,16 @@ const Navbar = () => {
                       className="text-blue-600 hover:text-blue-800"
                     >
                       Go to Admin Page
+                    </button>
+                  </li>
+                )}
+                {user.role === "customer" && (
+                  <li>
+                    <button
+                      onClick={goToRiwayat}
+                      className="text-green-600 hover:text-green-800"
+                    >
+                      Riwayat Pesanan
                     </button>
                   </li>
                 )}

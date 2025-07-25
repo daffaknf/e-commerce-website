@@ -9,9 +9,10 @@ const Produk = () => {
   const [semuaKategori, setSemuaKategori] = useState([]);
   const [kategoriDipilih, setKategoriDipilih] = useState([]);
   const [jumlahBeli, setJumlahBeli] = useState({});
-  const [keranjang, setKeranjang] = useState([]);
+  const [keranjang, setKeranjang] = useState(() => {
+    return JSON.parse(localStorage.getItem("keranjang")) || [];
+  });
 
-  // Ambil data dari backend
   useEffect(() => {
     const ambilProduk = async () => {
       try {
@@ -21,13 +22,12 @@ const Produk = () => {
         const grouped = {};
         data.forEach((item) => {
           const kategori = item.category_name;
-          if (!grouped[kategori]) {
-            grouped[kategori] = [];
-          }
+          if (!grouped[kategori]) grouped[kategori] = [];
+
           grouped[kategori].push({
             nama: item.name,
             gambar: item.image_product,
-            harga: `Rp${item.price.toLocaleString("id-ID")}`,
+            harga: item.price, // number
             id: item.product_id,
           });
         });
@@ -41,6 +41,11 @@ const Produk = () => {
 
     ambilProduk();
   }, []);
+
+  // Simpan keranjang ke localStorage
+  useEffect(() => {
+    localStorage.setItem("keranjang", JSON.stringify(keranjang));
+  }, [keranjang]);
 
   const scroll = (kategori, direction) => {
     const container = scrollRefs.current[kategori];
@@ -83,7 +88,7 @@ const Produk = () => {
       }
     });
 
-    // Reset jumlah beli jadi 0
+    // Reset jumlah beli
     setJumlahBeli((prev) => ({
       ...prev,
       [produk.nama]: 0,
@@ -114,7 +119,7 @@ const Produk = () => {
     <>
       <Navbar />
       <section className="min-h-screen bg-yellow-50 p-4 md:p-8">
-        {/* Filter */}
+        {/* Filter Kategori */}
         <div className="mb-6">
           <label className="font-semibold text-yellow-800 block mb-2">
             Filter Kategori (multi pilih):
@@ -143,7 +148,7 @@ const Produk = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Produk */}
+          {/* Daftar Produk */}
           <div className="w-full md:w-4/5 space-y-6">
             {kategoriUntukTampil.map((kategori) =>
               produkByKategori[kategori] ? (
@@ -152,7 +157,7 @@ const Produk = () => {
                     {kategori}
                   </h2>
 
-                  {/* Tombol panah */}
+                  {/* Tombol Panah */}
                   <button
                     onClick={() => scroll(kategori, "left")}
                     className="absolute top-16 left-0 z-10 p-2 bg-yellow-400 hover:bg-yellow-500 rounded-full shadow-lg hidden md:block"
@@ -166,7 +171,7 @@ const Produk = () => {
                     <ChevronRight />
                   </button>
 
-                  {/* List produk */}
+                  {/* Produk List */}
                   <div
                     ref={(el) => (scrollRefs.current[kategori] = el)}
                     className="flex gap-4 overflow-x-auto scroll-smooth scrollbar-hide pb-2"
@@ -185,7 +190,7 @@ const Produk = () => {
                           {item.nama}
                         </h3>
                         <p className="text-gray-600 text-sm mb-2">
-                          {item.harga}
+                          Rp{item.harga.toLocaleString("id-ID")}
                         </p>
                         <div className="flex items-center justify-between">
                           <button
@@ -226,21 +231,31 @@ const Produk = () => {
             {keranjang.length === 0 ? (
               <p className="text-gray-500">Belum ada item 😋</p>
             ) : (
-              <ul className="space-y-2 text-sm">
-                {keranjang.map((item, idx) => (
-                  <li key={idx} className="flex justify-between items-center">
-                    <span>
-                      {item.nama} x {item.jumlah}
-                    </span>
-                    <button
-                      onClick={() => hapusDariKeranjang(item.nama)}
-                      className="text-red-500 hover:underline text-xs"
-                    >
-                      Hapus
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="space-y-2 text-sm">
+                  {keranjang.map((item, idx) => (
+                    <li key={idx} className="flex justify-between items-center">
+                      <span>
+                        {item.nama} x {item.jumlah}
+                      </span>
+                      <button
+                        onClick={() => hapusDariKeranjang(item.nama)}
+                        className="text-red-500 hover:underline text-xs"
+                      >
+                        Hapus
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Tombol Checkout */}
+                <button
+                  onClick={() => (window.location.href = "/checkout")}
+                  className="mt-4 w-full bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700 text-sm"
+                >
+                  Checkout Sekarang
+                </button>
+              </>
             )}
           </div>
         </div>

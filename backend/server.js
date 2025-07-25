@@ -45,6 +45,7 @@ app.use("/uploads", express.static("uploads"));
 
 // 🔐 SIGNUP: POST /signup
 // 🔐 SIGNUP: POST /signup
+// ✅ SIGNUP (REGISTER)
 app.post("/signup", async (req, res) => {
   const { name, username, email, password, role } = req.body;
 
@@ -53,84 +54,76 @@ app.post("/signup", async (req, res) => {
     return res.status(400).json({ message: "Semua field wajib diisi." });
   }
 
-  // Validasi role
   if (role !== "customer" && role !== "admin") {
     return res.status(400).json({ message: "Role tidak valid." });
   }
 
   try {
-    const user_id = uuidv4(); // 🔑 Buat ID unik
+    const user_id = uuidv4();
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Masukkan user ke database dengan user_id
     const sql = `INSERT INTO users (user_id, name, username, email, password, role)
                  VALUES (?, ?, ?, ?, ?, ?)`;
     const values = [user_id, name, username, email, hashedPassword, role];
 
-    db.query(sql, values, (err, result) => {
-      if (err) {
-        console.error("Error insert user:", err);
-        if (err.code === "ER_DUP_ENTRY") {
-          return res
-            .status(400)
-            .json({ message: "Username atau email sudah terdaftar." });
-        }
-        return res.status(500).json({ message: "Gagal mendaftar." });
-      }
+    await db.query(sql, values);
 
-      res.status(201).json({ message: "Pendaftaran berhasil!" });
-    });
-  } catch (error) {
-    console.error("Hashing error:", error);
-    res.status(500).json({ message: "Terjadi kesalahan server." });
+    res.status(201).json({ message: "Pendaftaran berhasil!" });
+  } catch (err) {
+    console.error("Error insert user:", err);
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(400)
+        .json({ message: "Username atau email sudah terdaftar." });
+    }
+    res.status(500).json({ message: "Gagal mendaftar." });
   }
 });
 
-// 🔐 LOGIN
-app.post("/signin", (req, res) => {
+// ✅ LOGIN
+app.post("/signin", async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password)
     return res.status(400).json({ message: "Email dan password wajib diisi" });
 
-  const sql = "SELECT * FROM users WHERE email = ?";
-  db.query(sql, [email], (err, results) => {
-    if (err) return res.status(500).json({ message: "Server error" });
+  try {
+    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
 
-    if (results.length === 0)
+    if (rows.length === 0) {
       return res.status(401).json({ message: "Email tidak ditemukan" });
+    }
 
-    const user = results[0];
+    const user = rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
 
-    // Cek password
-    bcrypt.compare(password, user.password, (err, isMatch) => {
-      if (err)
-        return res
-          .status(500)
-          .json({ message: "Error membandingkan password" });
+    if (!isMatch) return res.status(401).json({ message: "Password salah" });
 
-      if (!isMatch) return res.status(401).json({ message: "Password salah" });
-
-      // Berhasil login
-      const { user_id, name, email, role } = user;
-      res.json({ user_id, name, email, role });
-    });
-  });
+    const { user_id, name, email: userEmail, role } = user;
+    res.json({ user_id, name, email: userEmail, role });
+  } catch (err) {
+    console.error("Error saat login:", err);
+    res.status(500).json({ message: "Terjadi kesalahan saat login" });
+  }
 });
 
 // GET semua kategori
-app.get("/categorys", (req, res) => {
-  db.query("SELECT * FROM categorys", (err, result) => {
-    if (err) return res.status(500).json({ message: "Error ambil data" });
+app.get("/categorys", async (req, res) => {
+  try {
+    const [result] = await db.query("SELECT * FROM categorys");
     res.json(result);
-  });
+  } catch (err) {
+    console.error("❌ Gagal ambil data kategori:", err);
+    res.status(500).json({ message: "Error ambil data" });
+  }
 });
 
 // POST tambah kategori
-// POST tambah kategori (pakai UUID untuk category_id karena tipe VARCHAR)
-app.post("/categorys", (req, res) => {
+app.post("/categorys", async (req, res) => {
   const { name } = req.body;
-  const category_id = uuidv4(); // 🔑 Buat ID unik
+  const category_id = uuidv4();
 
   if (!name) {
     return res
@@ -138,46 +131,51 @@ app.post("/categorys", (req, res) => {
       .json({ message: "Nama kategori tidak boleh kosong" });
   }
 
-  db.query(
-    "INSERT INTO categorys (category_id, name) VALUES (?, ?)",
-    [category_id, name],
-    (err) => {
-      if (err) {
-        console.error("❌ Gagal tambah kategori:", err);
-        return res.status(500).json({ message: "Gagal tambah kategori" });
-      }
-      res.json({ message: "Kategori berhasil ditambahkan" });
-    }
-  );
+  try {
+    await db.query("INSERT INTO categorys (category_id, name) VALUES (?, ?)", [
+      category_id,
+      name,
+    ]);
+    res.json({ message: "Kategori berhasil ditambahkan" });
+  } catch (err) {
+    console.error("❌ Gagal tambah kategori:", err);
+    res.status(500).json({ message: "Gagal tambah kategori" });
+  }
 });
 
 // PUT update kategori
-app.put("/categorys/:id", (req, res) => {
+app.put("/categorys/:id", async (req, res) => {
   const { name } = req.body;
   const { id } = req.params;
-  db.query(
-    "UPDATE categorys SET name = ? WHERE category_id = ?",
-    [name, id],
-    (err) => {
-      if (err)
-        return res.status(500).json({ message: "Error update kategori" });
-      res.json({ message: "Kategori diupdate" });
-    }
-  );
+
+  try {
+    await db.query("UPDATE categorys SET name = ? WHERE category_id = ?", [
+      name,
+      id,
+    ]);
+    res.json({ message: "Kategori diupdate" });
+  } catch (err) {
+    console.error("❌ Gagal update kategori:", err);
+    res.status(500).json({ message: "Error update kategori" });
+  }
 });
 
 // DELETE hapus kategori
-app.delete("/categorys/:id", (req, res) => {
+app.delete("/categorys/:id", async (req, res) => {
   const { id } = req.params;
-  db.query("DELETE FROM categorys WHERE category_id = ?", [id], (err) => {
-    if (err) return res.status(500).json({ message: "Error hapus kategori" });
+
+  try {
+    await db.query("DELETE FROM categorys WHERE category_id = ?", [id]);
     res.json({ message: "Kategori dihapus" });
-  });
+  } catch (err) {
+    console.error("❌ Gagal hapus kategori:", err);
+    res.status(500).json({ message: "Error hapus kategori" });
+  }
 });
 
 // GET semua produk
 // GET semua produk + nama kategori
-app.get("/products", (req, res) => {
+app.get("/products", async (req, res) => {
   const sql = `
     SELECT 
       p.product_id, 
@@ -191,18 +189,19 @@ app.get("/products", (req, res) => {
     JOIN categorys c ON p.category_id = c.category_id
   `;
 
-  db.query(sql, (err, result) => {
-    if (err) {
-      console.error("Gagal ambil produk:", err);
-      return res.status(500).json({ message: "Error ambil produk" });
-    }
+  try {
+    const [result] = await db.query(sql); // pakai await dan destructuring [rows]
     res.json(result);
-  });
+  } catch (err) {
+    console.error("Gagal ambil produk:", err);
+    res.status(500).json({ message: "Error ambil produk" });
+  }
 });
 
 // POST tambah produk
 // POST tambah produk + upload gambar
-app.post("/products", upload.single("image_product"), (req, res) => {
+// POST tambah produk
+app.post("/products", upload.single("image_product"), async (req, res) => {
   const { name, stock, price, category_id } = req.body;
   const image_product = req.file ? req.file.filename : null;
   const product_id = uuidv4();
@@ -221,26 +220,32 @@ app.post("/products", upload.single("image_product"), (req, res) => {
 
   const sql =
     "INSERT INTO product (product_id, name, stock, price, category_id, image_product) VALUES (?, ?, ?, ?, ?, ?)";
-  db.query(
-    sql,
-    [product_id, name, stock, price, category_id, image_product],
-    (err) => {
-      if (err) {
-        console.error("Gagal tambah produk:", err);
-        return res.status(500).json({ message: "Gagal tambah produk" });
-      }
-      res.json({ message: "Produk ditambahkan" });
-    }
-  );
+
+  try {
+    await db.query(sql, [
+      product_id,
+      name,
+      stock,
+      price,
+      category_id,
+      image_product,
+    ]);
+    res.json({ message: "Produk ditambahkan" });
+  } catch (err) {
+    console.error("Gagal tambah produk:", err);
+    res.status(500).json({ message: "Gagal tambah produk" });
+  }
 });
 
 // PUT update produk
-app.put("/products/:id", upload.single("image_product"), (req, res) => {
+// PUT update produk
+app.put("/products/:id", upload.single("image_product"), async (req, res) => {
   const { name, stock, price, category_id } = req.body;
   const { id } = req.params;
   const image_product = req.file ? req.file.filename : null;
 
   let sql, params;
+
   if (image_product) {
     sql = `
       UPDATE product SET name = ?, stock = ?, price = ?, category_id = ?, image_product = ?
@@ -255,38 +260,41 @@ app.put("/products/:id", upload.single("image_product"), (req, res) => {
     params = [name, stock, price, category_id, id];
   }
 
-  db.query(sql, params, (err) => {
-    if (err) {
-      console.error("Gagal update produk:", err);
-      return res.status(500).json({ message: "Gagal update produk" });
-    }
+  try {
+    await db.query(sql, params);
     res.json({ message: "Produk diupdate" });
-  });
+  } catch (err) {
+    console.error("Gagal update produk:", err);
+    res.status(500).json({ message: "Gagal update produk" });
+  }
 });
 
 // DELETE hapus produk
-app.delete("/products/:id", (req, res) => {
+app.delete("/products/:id", async (req, res) => {
   const { id } = req.params;
 
-  db.query("DELETE FROM product WHERE product_id = ?", [id], (err) => {
-    if (err) {
-      console.error("Gagal hapus produk:", err);
-      return res.status(500).json({ message: "Gagal hapus produk" });
-    }
+  try {
+    await db.query("DELETE FROM product WHERE product_id = ?", [id]);
     res.json({ message: "Produk dihapus" });
-  });
+  } catch (err) {
+    console.error("Gagal hapus produk:", err);
+    res.status(500).json({ message: "Gagal hapus produk" });
+  }
 });
 
 // GET semua voucher
-app.get("/vouchers", (req, res) => {
-  db.query("SELECT * FROM vouchers", (err, result) => {
-    if (err) return res.status(500).json({ message: "Gagal ambil voucher" });
+app.get("/vouchers", async (req, res) => {
+  try {
+    const [result] = await db.query("SELECT * FROM vouchers");
     res.json(result);
-  });
+  } catch (err) {
+    console.error("Gagal ambil voucher:", err);
+    res.status(500).json({ message: "Gagal ambil voucher" });
+  }
 });
 
 // POST tambah voucher
-app.post("/vouchers", (req, res) => {
+app.post("/vouchers", async (req, res) => {
   const { code_voucher, name_voucher, discount_percent, quota } = req.body;
   const voucher_id = uuidv4();
 
@@ -299,21 +307,23 @@ app.post("/vouchers", (req, res) => {
     VALUES (?, ?, ?, ?, ?)
   `;
 
-  db.query(
-    sql,
-    [voucher_id, code_voucher, name_voucher, discount_percent, quota],
-    (err) => {
-      if (err) {
-        console.error("Gagal tambah voucher:", err);
-        return res.status(500).json({ message: "Gagal tambah voucher" });
-      }
-      res.json({ message: "Voucher ditambahkan" });
-    }
-  );
+  try {
+    await db.query(sql, [
+      voucher_id,
+      code_voucher,
+      name_voucher,
+      discount_percent,
+      quota,
+    ]);
+    res.json({ message: "Voucher ditambahkan" });
+  } catch (err) {
+    console.error("Gagal tambah voucher:", err);
+    res.status(500).json({ message: "Gagal tambah voucher" });
+  }
 });
 
 // PUT update voucher
-app.put("/vouchers/:id", (req, res) => {
+app.put("/vouchers/:id", async (req, res) => {
   const { code_voucher, name_voucher, discount_percent, quota } = req.body;
   const { id } = req.params;
 
@@ -323,29 +333,184 @@ app.put("/vouchers/:id", (req, res) => {
     WHERE voucher_id = ?
   `;
 
-  db.query(
-    sql,
-    [code_voucher, name_voucher, discount_percent, quota, id],
-    (err) => {
-      if (err) {
-        console.error("Gagal update voucher:", err);
-        return res.status(500).json({ message: "Gagal update voucher" });
-      }
-      res.json({ message: "Voucher diperbarui" });
-    }
-  );
+  try {
+    await db.query(sql, [
+      code_voucher,
+      name_voucher,
+      discount_percent,
+      quota,
+      id,
+    ]);
+    res.json({ message: "Voucher diperbarui" });
+  } catch (err) {
+    console.error("Gagal update voucher:", err);
+    res.status(500).json({ message: "Gagal update voucher" });
+  }
 });
 
 // DELETE hapus voucher
-app.delete("/vouchers/:id", (req, res) => {
+app.delete("/vouchers/:id", async (req, res) => {
   const { id } = req.params;
-  db.query("DELETE FROM vouchers WHERE voucher_id = ?", [id], (err) => {
-    if (err) {
-      console.error("Gagal hapus voucher:", err);
-      return res.status(500).json({ message: "Gagal hapus voucher" });
-    }
+
+  try {
+    await db.query("DELETE FROM vouchers WHERE voucher_id = ?", [id]);
     res.json({ message: "Voucher dihapus" });
-  });
+  } catch (err) {
+    console.error("Gagal hapus voucher:", err);
+    res.status(500).json({ message: "Gagal hapus voucher" });
+  }
+});
+
+app.post("/orders", async (req, res) => {
+  const {
+    user_id,
+    voucher_id,
+    total_amount,
+    discount_amount,
+    final_amount,
+    address,
+    payment_method,
+    keranjang,
+  } = req.body;
+
+  const order_id = uuidv4(); // atau custom generator
+  const order_date = new Date();
+
+  try {
+    // 1. Simpan ke orders
+    await db.query(
+      `INSERT INTO orders (order_id, user_id, voucher_id, total_amount, discount_amount, address, payment_method, final_amount, order_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        order_id,
+        user_id,
+        voucher_id || null,
+        total_amount,
+        discount_amount,
+        address,
+        payment_method,
+        final_amount,
+        order_date,
+      ]
+    );
+
+    // 2. Simpan order_items
+    for (const item of keranjang) {
+      const order_item_id = uuidv4();
+      await db.query(
+        `INSERT INTO order_items (order_item_id, order_id, product_id, quantity, price)
+         VALUES (?, ?, ?, ?, ?)`,
+        [order_item_id, order_id, item.id, item.jumlah, item.harga]
+      );
+
+      // 3. Kurangi stok produk
+      await db.query(
+        `UPDATE product SET stock = stock - ? WHERE product_id = ?`,
+        [item.jumlah, item.id]
+      );
+    }
+
+    res.status(201).json({ message: "Pesanan berhasil dibuat" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Gagal membuat pesanan" });
+  }
+});
+
+app.get("/orders/:user_id", async (req, res) => {
+  const { user_id } = req.params;
+
+  try {
+    // Ambil semua order milik user
+    const [orders] = await db.query(
+      `
+      SELECT * FROM orders WHERE user_id = ? ORDER BY order_date DESC
+    `,
+      [user_id]
+    );
+
+    // Untuk setiap order, ambil itemnya
+    for (let order of orders) {
+      const [items] = await db.query(
+        `
+        SELECT 
+          oi.product_id, p.name, oi.quantity, oi.price
+        FROM order_items oi
+        JOIN product p ON oi.product_id = p.product_id
+        WHERE oi.order_id = ?
+      `,
+        [order.order_id]
+      );
+
+      // Tambahkan item ke dalam masing-masing order
+      order.items = items;
+    }
+
+    res.json(orders);
+  } catch (err) {
+    console.error("Gagal ambil riwayat pesanan:", err);
+    res.status(500).json({ message: "Gagal ambil riwayat pesanan" });
+  }
+});
+
+app.get("/admin/orders", async (req, res) => {
+  try {
+    // Ambil semua order + nama user
+    const [orders] = await db.query(
+      `
+      SELECT 
+        o.*, 
+        u.name AS user_name 
+      FROM orders o 
+      JOIN users u ON o.user_id = u.user_id
+      ORDER BY o.order_date DESC
+    `
+    );
+
+    // Tambahkan detail item untuk tiap order
+    for (let order of orders) {
+      const [items] = await db.query(
+        `
+        SELECT 
+          oi.product_id, p.name, oi.quantity, oi.price
+        FROM order_items oi
+        JOIN product p ON oi.product_id = p.product_id
+        WHERE oi.order_id = ?
+      `,
+        [order.order_id]
+      );
+      order.items = items;
+    }
+
+    res.json(orders);
+  } catch (err) {
+    console.error("Gagal ambil semua order:", err);
+    res.status(500).json({ message: "Gagal ambil data order untuk admin" });
+  }
+});
+app.get("/admin/revenue", async (req, res) => {
+  const { start_date, end_date } = req.query;
+
+  try {
+    let query = `
+      SELECT DATE(order_date) AS order_date, SUM(final_amount)+0 AS total
+      FROM orders
+    `;
+    const params = [];
+
+    if (start_date && end_date) {
+      query += ` WHERE DATE(order_date) BETWEEN ? AND ?`;
+      params.push(start_date, end_date);
+    }
+
+    query += ` GROUP BY DATE(order_date) ORDER BY order_date ASC`;
+
+    const [rows] = await db.query(query, params); // ✅ pakai promise-style
+    res.json(rows);
+  } catch (err) {
+    console.error("Error ambil data grafik:", err);
+    res.status(500).json({ message: "Gagal ambil data grafik" });
+  }
 });
 
 // Jalankan server

@@ -1,18 +1,13 @@
-const mysql = require("mysql2");
+const mysql = require("mysql2/promise");
 
-const connection = mysql.createConnection({
+// Gunakan createPool agar tidak perlu connect manual
+const db = mysql.createPool({
   host: "localhost",
   user: "root",
   password: "", // kosongkan jika tidak pakai password
-  database: "ecommerce_1", // ganti dengan nama database kamu
+  database: "ecommerce_1", // sesuaikan dengan nama database kamu
 });
 
-connection.connect((err) => {
-  if (err) {
-    console.error("Koneksi ke database gagal:", err);
-    return;
-  }
-  console.log("Terhubung ke database MySQL!");
-});
+// Tidak perlu .connect() karena createPool otomatis mengatur koneksi
 
-module.exports = connection;
+module.exports = db;
